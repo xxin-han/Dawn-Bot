@@ -59,10 +59,8 @@ class Dawn:
         "xxxxxxx      xxxxxxxXXXXXXX       XXXXXXXiiiiiiii  nnnnnn    nnnnnn   99999999             888888888     ",
     ]
 
-    
     init()
 
-    
     for line in lines:
         print(Fore.YELLOW + line + Style.RESET_ALL)
 
@@ -72,10 +70,10 @@ class Dawn:
     print()
 
 
-    def format_seconds(self, seconds):
-        hours, remainder = divmod(seconds, 3600)
-        minutes, seconds = divmod(remainder, 60)
-        return f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}"
+def format_seconds(self, seconds):
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}"
 
     def load_accounts(self):
         filename = "accounts.json"
