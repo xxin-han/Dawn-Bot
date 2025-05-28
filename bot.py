@@ -1,7 +1,7 @@
 import requests
 from fake_useragent import FakeUserAgent
 from datetime import datetime
-from colorama import init, Fore, Style
+from colorama import *
 import asyncio, json, os, pytz, uuid
 import re
 from pathlib import Path
@@ -11,6 +11,134 @@ from pydantic.networks import HttpUrl, IPv4Address
 from requests.exceptions import ProxyError, SSLError
 
 wib = pytz.timezone('Asia/Jakarta')
+
+# Proxy parsing logic
+Protocol = Literal["http", "https", "socks4", "socks5"]
+PROXY_FORMATS_REGEXP = [
+    re.compile(
+        r"^(?:(?P<protocol>.+)://)?"  # Optional: protocol
+        r"(?P<login>[^@:]+)"  # Login (no ':' or '@')
+        r":(?P<password>[^@]+)"  # Password (can contain ':', but not '@')
+        r"[@:]"  # '@' or ':' as separator
+        r"(?P<host>[^@:\s]+)"  # Host (no ':' or '@')
+        r":(?P<port>\d{1,5})"  # Port: 1 to 5 digits
+        r"(?:\[(?P<refresh_url>https?://[^\s\]]+)\])?$"  # Optional: [refresh_url]
+    ),
+    re.compile(
+        r"^(?:(?P<protocol>.+)://)?"  # Optional: protocol
+        r"(?P<host>[^@:\s]+)"  # Host (no ':' or '@')
+        r":(?P<port>\d{1,5})"  # Port: 1 to 5 digits
+        r"[@:]"  # '@' or ':' as separator
+        r"(?P<login>[^@:]+)"  # Login (no ':' or '@')
+        r":(?P<password>[^@]+)"  # Password (can contain ':', but not '@')
+        r"(?:\[(?P<refresh_url>https?://[^\s\]]+)\])?$"  # Optional: [refresh_url]
+    ),
+    re.compile(
+        r"^(?:(?P<protocol>.+)://)?"  # Optional: protocol
+        r"(?P<host>[^@:\s]+)"  # Host (no ':' or '@')
+        r":(?P<port>\d{1,5})"  # Port: 1 to 5 digits
+        r"(?:\[(?P<refresh_url>https?://[^\s\]]+)\])?$"  # Optional: [refresh_url]
+    ),
+]
+
+class ParsedProxy(TypedDict):
+    host: str
+    port: int
+    protocol: Protocol | None
+    login: str | None
+    password: str | None
+    refresh_url: str | None
+
+def parse_proxy_str(proxy: str) -> ParsedProxy:
+    if not proxy:
+        raise ValueError(f"Proxy cannot be an empty string")
+    for pattern in PROXY_FORMATS_REGEXP:
+        match = pattern.match(proxy)
+        if match:
+            groups = match.groupdict()
+            return {
+                "host": groups["host"],
+                "port": int(groups["port"]),
+                "protocol": groups.get("protocol"),
+                "login": groups.get("login"),
+                "password": groups.get("password"),
+                "refresh_url": groups.get("refresh_url"),
+            }
+    raise ValueError(f"Unsupported proxy format: '{proxy}'")
+
+def _load_lines(filepath: Path | str) -> list[str]:
+    with open(filepath, "r") as file:
+        return [line.strip() for line in file.readlines() if line.strip()]
+
+class Proxy(BaseModel):
+    host: str
+    port: int = Field(gt=0, le=65535)
+    protocol: Protocol = "http"
+    login: str | None = None
+    password: str | None = None
+    refresh_url: str | None = None
+
+    @field_validator("host")
+    def host_validator(cls, v):
+        if v.replace(".", "").isdigit():
+            IPv4Address(v)
+        else:
+            HttpUrl(f"http://{v}")
+        return v
+
+    @field_validator("refresh_url")
+    def refresh_url_validator(cls, v):
+        if v:
+            HttpUrl(v)
+        return v
+
+    @field_validator("protocol")
+    def protocol_validator(cls, v):
+        if v not in ["http", "https", "socks4", "socks5"]:
+            raise ValueError("Only http, https, socks4, and socks5 protocols are supported")
+        return v
+
+    @classmethod
+    def from_str(cls, proxy: Union[str, "Proxy"]) -> "Proxy":
+        if proxy is None:
+            raise ValueError("Proxy cannot be None")
+        if isinstance(proxy, cls):
+            return proxy
+        parsed_proxy = parse_proxy_str(proxy)
+        parsed_proxy["protocol"] = parsed_proxy["protocol"] or "http"
+        return cls(**parsed_proxy)
+
+    @classmethod
+    def from_file(cls, filepath: Path | str) -> list["Proxy"]:
+        path = Path(filepath)
+        if not path.exists():
+            raise FileNotFoundError(f"Proxy file not found: {filepath}")
+        proxies = []
+        for proxy in _load_lines(path):
+            try:
+                proxy_obj = cls.from_str(proxy)
+                # Force http for https proxies to avoid SSL issues, keep socks intact
+                if proxy_obj.protocol == "https":
+                    proxy_obj.protocol = "http"
+                proxies.append(proxy_obj)
+            except ValueError as e:
+                print(f"{Fore.RED + Style.BRIGHT}✗ Invalid proxy format: {proxy} ({e}){Style.RESET_ALL}")
+        return proxies
+
+    @property
+    def as_url(self) -> str:
+        return (
+            f"{self.protocol}://"
+            + (f"{self.login}:{self.password}@" if self.login and self.password else "")
+            + f"{self.host}:{self.port}"
+        )
+
+    @property
+    def as_proxies_dict(self) -> dict:
+        proxies = {}
+        proxies["http"] = self.as_url
+        proxies["https"] = self.as_url
+        return proxies
 
 class Dawn:
     def __init__(self) -> None:
@@ -38,9 +166,9 @@ class Dawn:
             flush=True
         )
 
-def display_banner():
-    lines = [
-        "                    XXXXXXX       XXXXXXX  iiii                         999999999          888888888     ",
+    def welcome(self):
+        print(
+        "                                                                                                         ",
         "                    XXXXXXX       XXXXXXX  iiii                         999999999          888888888     ",
         "                    X:::::X       X:::::X i::::i                      99:::::::::99      88:::::::::88   ",
         "                    X:::::X       X:::::X  iiii                     99:::::::::::::99  88:::::::::::::88 ",
@@ -57,22 +185,12 @@ def display_banner():
         "  x:::::x  x:::::x  X:::::X       X:::::Xi::::::i  n::::n    n::::n     9::::::9       88:::::::::::::88 ",
         " x:::::x    x:::::x X:::::X       X:::::Xi::::::i  n::::n    n::::n    9::::::9          88:::::::::88   ",
         "xxxxxxx      xxxxxxxXXXXXXX       XXXXXXXiiiiiiii  nnnnnn    nnnnnn   99999999             888888888     ",
-    ]
+        )
 
-    for line in lines:
-        print(line)
-
-
-    print()
-    print(Fore.YELLOW + '🚀 Welcome to KiteAi-Bot Script!' + Style.RESET_ALL)
-    print(Fore.CYAN + '🐦 Follow us on Twitter: @xXin98' + Style.RESET_ALL)
-    print()
-
-
-def format_seconds(self, seconds):
-    hours, remainder = divmod(seconds, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    return f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}"
+    def format_seconds(self, seconds):
+        hours, remainder = divmod(seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        return f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}"
 
     def load_accounts(self):
         filename = "accounts.json"
@@ -458,132 +576,3 @@ if __name__ == "__main__":
             f"{Fore.CYAN + Style.BRIGHT}╭─[{datetime.now().astimezone(wib).strftime('%x %X %Z')}]{Style.RESET_ALL}\n"
             f"{Fore.CYAN + Style.BRIGHT}╰──▶{Style.RESET_ALL} {Fore.RED + Style.BRIGHT}✗ Bot stopped by user{Style.RESET_ALL}"
         )
-        
-# Proxy parsing logic
-Protocol = Literal["http", "https", "socks4", "socks5"]
-PROXY_FORMATS_REGEXP = [
-    re.compile(
-        r"^(?:(?P<protocol>.+)://)?"  # Optional: protocol
-        r"(?P<login>[^@:]+)"  # Login (no ':' or '@')
-        r":(?P<password>[^@]+)"  # Password (can contain ':', but not '@')
-        r"[@:]"  # '@' or ':' as separator
-        r"(?P<host>[^@:\s]+)"  # Host (no ':' or '@')
-        r":(?P<port>\d{1,5})"  # Port: 1 to 5 digits
-        r"(?:\[(?P<refresh_url>https?://[^\s\]]+)\])?$"  # Optional: [refresh_url]
-    ),
-    re.compile(
-        r"^(?:(?P<protocol>.+)://)?"  # Optional: protocol
-        r"(?P<host>[^@:\s]+)"  # Host (no ':' or '@')
-        r":(?P<port>\d{1,5})"  # Port: 1 to 5 digits
-        r"[@:]"  # '@' or ':' as separator
-        r"(?P<login>[^@:]+)"  # Login (no ':' or '@')
-        r":(?P<password>[^@]+)"  # Password (can contain ':', but not '@')
-        r"(?:\[(?P<refresh_url>https?://[^\s\]]+)\])?$"  # Optional: [refresh_url]
-    ),
-    re.compile(
-        r"^(?:(?P<protocol>.+)://)?"  # Optional: protocol
-        r"(?P<host>[^@:\s]+)"  # Host (no ':' or '@')
-        r":(?P<port>\d{1,5})"  # Port: 1 to 5 digits
-        r"(?:\[(?P<refresh_url>https?://[^\s\]]+)\])?$"  # Optional: [refresh_url]
-    ),
-]
-
-class ParsedProxy(TypedDict):
-    host: str
-    port: int
-    protocol: Protocol | None
-    login: str | None
-    password: str | None
-    refresh_url: str | None
-
-def parse_proxy_str(proxy: str) -> ParsedProxy:
-    if not proxy:
-        raise ValueError(f"Proxy cannot be an empty string")
-    for pattern in PROXY_FORMATS_REGEXP:
-        match = pattern.match(proxy)
-        if match:
-            groups = match.groupdict()
-            return {
-                "host": groups["host"],
-                "port": int(groups["port"]),
-                "protocol": groups.get("protocol"),
-                "login": groups.get("login"),
-                "password": groups.get("password"),
-                "refresh_url": groups.get("refresh_url"),
-            }
-    raise ValueError(f"Unsupported proxy format: '{proxy}'")
-
-def _load_lines(filepath: Path | str) -> list[str]:
-    with open(filepath, "r") as file:
-        return [line.strip() for line in file.readlines() if line.strip()]
-
-class Proxy(BaseModel):
-    host: str
-    port: int = Field(gt=0, le=65535)
-    protocol: Protocol = "http"
-    login: str | None = None
-    password: str | None = None
-    refresh_url: str | None = None
-
-    @field_validator("host")
-    def host_validator(cls, v):
-        if v.replace(".", "").isdigit():
-            IPv4Address(v)
-        else:
-            HttpUrl(f"http://{v}")
-        return v
-
-    @field_validator("refresh_url")
-    def refresh_url_validator(cls, v):
-        if v:
-            HttpUrl(v)
-        return v
-
-    @field_validator("protocol")
-    def protocol_validator(cls, v):
-        if v not in ["http", "https", "socks4", "socks5"]:
-            raise ValueError("Only http, https, socks4, and socks5 protocols are supported")
-        return v
-
-    @classmethod
-    def from_str(cls, proxy: Union[str, "Proxy"]) -> "Proxy":
-        if proxy is None:
-            raise ValueError("Proxy cannot be None")
-        if isinstance(proxy, cls):
-            return proxy
-        parsed_proxy = parse_proxy_str(proxy)
-        parsed_proxy["protocol"] = parsed_proxy["protocol"] or "http"
-        return cls(**parsed_proxy)
-
-    @classmethod
-    def from_file(cls, filepath: Path | str) -> list["Proxy"]:
-        path = Path(filepath)
-        if not path.exists():
-            raise FileNotFoundError(f"Proxy file not found: {filepath}")
-        proxies = []
-        for proxy in _load_lines(path):
-            try:
-                proxy_obj = cls.from_str(proxy)
-                # Force http for https proxies to avoid SSL issues, keep socks intact
-                if proxy_obj.protocol == "https":
-                    proxy_obj.protocol = "http"
-                proxies.append(proxy_obj)
-            except ValueError as e:
-                print(f"{Fore.RED + Style.BRIGHT}✗ Invalid proxy format: {proxy} ({e}){Style.RESET_ALL}")
-        return proxies
-
-    @property
-    def as_url(self) -> str:
-        return (
-            f"{self.protocol}://"
-            + (f"{self.login}:{self.password}@" if self.login and self.password else "")
-            + f"{self.host}:{self.port}"
-        )
-
-    @property
-    def as_proxies_dict(self) -> dict:
-        proxies = {}
-        proxies["http"] = self.as_url
-        proxies["https"] = self.as_url
-        return proxies
-
