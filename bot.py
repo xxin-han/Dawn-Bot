@@ -38,9 +38,9 @@ class Dawn:
             flush=True
         )
 
-    def display_banner():
+def display_banner():
     lines = [
-        "                                                                                                         ",
+        "                    XXXXXXX       XXXXXXX  iiii                         999999999          888888888     ",
         "                    XXXXXXX       XXXXXXX  iiii                         999999999          888888888     ",
         "                    X:::::X       X:::::X i::::i                      99:::::::::99      88:::::::::88   ",
         "                    X:::::X       X:::::X  iiii                     99:::::::::::::99  88:::::::::::::88 ",
@@ -59,10 +59,9 @@ class Dawn:
         "xxxxxxx      xxxxxxxXXXXXXX       XXXXXXXiiiiiiii  nnnnnn    nnnnnn   99999999             888888888     ",
     ]
 
-    init()
-
     for line in lines:
-        print(Fore.YELLOW + line + Style.RESET_ALL)
+        print(line)
+
 
     print()
     print(Fore.YELLOW + '🚀 Welcome to KiteAi-Bot Script!' + Style.RESET_ALL)
