@@ -56,6 +56,6 @@ nano accounts.json
 ```bash
 python bot.py #or python3 bot.py
 ```
-6. Stop Command
+7. Stop Command
 
     ```CTRL + C ```
