@@ -168,11 +168,11 @@ class Dawn:
 
 def welcome(self):
     try:
-        with open("baner.txt", "r") as file:
+        with open("ascii.txt", "r") as file:
             ascii_art = file.read()
             print(ascii_art)
     except FileNotFoundError:
-        print("✗ baner.txt not found.")
+        print("✗ ascii.txt not found.")
 
 
     def format_seconds(self, seconds):
