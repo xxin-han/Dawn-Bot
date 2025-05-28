@@ -1,7 +1,7 @@
 import requests
 from fake_useragent import FakeUserAgent
 from datetime import datetime
-from colorama import *
+from colorama import init, Fore, Style
 import asyncio, json, os, pytz, uuid
 import re
 from pathlib import Path
