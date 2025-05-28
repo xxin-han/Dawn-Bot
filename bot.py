@@ -166,14 +166,18 @@ class Dawn:
             flush=True
         )
 
-def welcome(self):
-    try:
-        with open("ascii.txt", "r") as file:
-            ascii_art = file.read()
-            print(ascii_art)
-    except FileNotFoundError:
-        print("✗ ascii.txt not found.")
-
+    def welcome(self):
+        print(
+            f"""{Fore.BLUE + Style.BRIGHT}
+   ██████╗  █████╗ ██╗    ██╗███╗   ██╗
+   ██╔══██╗██╔══██╗██║    ██║████╗  ██║
+   ██║  ██║███████║██║ █╗ ██║██╔██╗ ██║
+   ██║  ██║██╔══██║██║███╗██║██║╚██╗██║
+   ██████╔╝██║  ██║╚███╔███╔╝██║ ╚████║
+   ╚═════╝ ╚═╝  ╚═╝ ╚══╝╚══╝ ╚═╝  ╚═══╝
+            {Fore.GREEN + Style.BRIGHT}AUTO PING BOT thanks to ashtrobe for script  menu by ansh {Style.RESET_ALL}
+            """
+        )
 
     def format_seconds(self, seconds):
         hours, remainder = divmod(seconds, 3600)
