@@ -24,9 +24,6 @@
    ```bash
    wget https://github.com/xxin-han/setup/raw/main/setup.sh -O setup.sh && chmod +x setup.sh && ./setup.sh
    ```
-   ```bash
-   pip install -r requirements.txt
-   ```
 
 2. Clone Repository
    ```bash
@@ -34,6 +31,9 @@
    ```
    ```bash
    cd Dawn-Bot
+   ```
+    ```bash
+   pip install -r requirements.txt
    ```
 
 3. Getting Token
