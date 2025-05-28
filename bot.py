@@ -166,26 +166,14 @@ class Dawn:
             flush=True
         )
 
-    def welcome(self):
-        print(
-        "                                                                                                         ",
-        "                    XXXXXXX       XXXXXXX  iiii                         999999999          888888888     ",
-        "                    X:::::X       X:::::X i::::i                      99:::::::::99      88:::::::::88   ",
-        "                    X:::::X       X:::::X  iiii                     99:::::::::::::99  88:::::::::::::88 ",
-        "                    X::::::X     X::::::X                          9::::::99999::::::98::::::88888::::::8",
-        "xxxxxxx      xxxxxxxXXX:::::X   X:::::XXXiiiiiii nnnn  nnnnnnnn    9:::::9     9:::::98:::::8     8:::::8",
-        " x:::::x    x:::::x    X:::::X X:::::X   i:::::i n:::nn::::::::nn  9:::::9     9:::::98:::::8     8:::::8",
-        "  x:::::x  x:::::x      X:::::X:::::X     i::::i n::::::::::::::nn  9:::::99999::::::9 8:::::88888:::::8 ",
-        "   x:::::xx:::::x        X:::::::::X      i::::i nn:::::::::::::::n  99::::::::::::::9  8:::::::::::::8  ",
-        "    x::::::::::x         X:::::::::X      i::::i   n:::::nnnn:::::n    99999::::::::9  8:::::88888:::::8 ",
-        "     x::::::::x         X:::::X:::::X     i::::i   n::::n    n::::n         9::::::9  8:::::8     8:::::8",
-        "     x::::::::x        X:::::X X:::::X    i::::i   n::::n    n::::n        9::::::9   8:::::8     8:::::8",
-        "    x::::::::::x    XXX:::::X   X:::::XXX i::::i   n::::n    n::::n       9::::::9    8:::::8     8:::::8",
-        "   x:::::xx:::::x   X::::::X     X::::::Xi::::::i  n::::n    n::::n      9::::::9     8::::::88888::::::8",
-        "  x:::::x  x:::::x  X:::::X       X:::::Xi::::::i  n::::n    n::::n     9::::::9       88:::::::::::::88 ",
-        " x:::::x    x:::::x X:::::X       X:::::Xi::::::i  n::::n    n::::n    9::::::9          88:::::::::88   ",
-        "xxxxxxx      xxxxxxxXXXXXXX       XXXXXXXiiiiiiii  nnnnnn    nnnnnn   99999999             888888888     ",
-        )
+def welcome(self):
+    try:
+        with open("baner.txt", "r") as file:
+            ascii_art = file.read()
+            print(ascii_art)
+    except FileNotFoundError:
+        print("✗ baner.txt not found.")
+
 
     def format_seconds(self, seconds):
         hours, remainder = divmod(seconds, 3600)
