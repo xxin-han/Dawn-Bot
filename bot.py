@@ -400,9 +400,8 @@ class Dawn:
                 input(f"{Fore.YELLOW + Style.BRIGHT}Press Enter to continue...{Style.RESET_ALL}")
 
     async def user_data(self, app_id: str, email: str, token: str, proxy=None, retries=5):
-        url = f"{self.BASE_API}/api/atom/v1/userreferral/getpoint?appid={app_id}"
+        url = "https://app-api.jp.stork-oracle.network/v1/me"
         headers = {
-            **self.headers,
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
         }
@@ -412,7 +411,7 @@ class Dawn:
                 response = requests.get(url=url, headers=headers, proxies=proxies, timeout=120)
                 response.raise_for_status()
                 result = response.json()
-                return result["data"]
+                return result
             except (ProxyError, SSLError) as e:
                 if attempt < retries - 1:
                     self.print_message(email, proxy, Fore.YELLOW, f"✗ Proxy error, retrying: {str(e)}")
