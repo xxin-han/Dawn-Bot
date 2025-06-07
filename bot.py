@@ -400,36 +400,37 @@ class Dawn:
                 input(f"{Fore.YELLOW + Style.BRIGHT}Press Enter to continue...{Style.RESET_ALL}")
 
     async def user_data(self, app_id: str, email: str, token: str, proxy=None, retries=5):
-        url = "https://app-api.jp.stork-oracle.network/v1/me"
-        headers = {
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-        }
-        for attempt in range(retries):
-            try:
-                proxies = proxy.as_proxies_dict if proxy else None
-                response = requests.get(url=url, headers=headers, proxies=proxies, timeout=120)
-                response.raise_for_status()
-                result = response.json()
-                return result
-            except (ProxyError, SSLError) as e:
-                if attempt < retries - 1:
-                    self.print_message(email, proxy, Fore.YELLOW, f"✗ Proxy error, retrying: {str(e)}")
-                    await asyncio.sleep(5)
-                    continue
-                proxy = self.rotate_proxy_for_account(email) if proxy else None
-                self.print_message(email, proxy, Fore.YELLOW, f"✗ Failed to get data: {str(e)}")
-                return None
-            except Exception as e:
-                if attempt < retries - 1:
-                    await asyncio.sleep(5)
-                    continue
-                self.print_message(email, proxy, Fore.YELLOW, f"✗ Failed to get data: {str(e)}")
-                return None
+    url = "https://app-api.jp.stork-oracle.network/v1/me"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+    for attempt in range(retries):
+        try:
+            proxies = proxy.as_proxies_dict if proxy else None
+            response = requests.get(url=url, headers=headers, proxies=proxies, timeout=120)
+            response.raise_for_status()
+            result = response.json()
+            return result  # ← Biarkan data asli dikembalikan
+        except (ProxyError, SSLError) as e:
+            if attempt < retries - 1:
+                self.print_message(email, proxy, Fore.YELLOW, f"✗ Proxy error, retrying: {str(e)}")
+                await asyncio.sleep(5)
+                continue
+            proxy = self.rotate_proxy_for_account(email) if proxy else None
+            self.print_message(email, proxy, Fore.YELLOW, f"✗ Failed to get data: {str(e)}")
+            return None
+        except Exception as e:
+            if attempt < retries - 1:
+                await asyncio.sleep(5)
+                continue
+            self.print_message(email, proxy, Fore.YELLOW, f"✗ Failed to get data: {str(e)}")
+            return None
+
 
     async def send_keepalive(self, app_id: str, email: str, token: str, use_proxy: bool, proxy=None, retries=5):
-        url = f"{self.BASE_API}/chromeapi/dawn/v1/userreward/keepalive?appid={app_id}"
-        data = json.dumps({"username": email, "extensionid": "fpdkjdnhkakefebpekbdhillbhonfjjp", "numberoftabs": 0, "_v": "1.1.6"})
+        url = f"{self.BASE_API}https://app-api.jp.stork-oracle.network/v1/me={app_id}"
+        data = json.dumps({"username": email, "extensionid": "knnliglhgkmlblppdejchidfihjnockl", "numberoftabs": 0, "_v": "1.1.1"})
         headers = {
             **self.headers,
             "Authorization": f"Bearer {token}",
