@@ -32,30 +32,36 @@
    ```bash
    cd Dawn-Bot
    ```
+3. Virtual Environment
+    ```bash
+   python3 -m venv venv
+   ```
+    ```bash
+   source venv/bin/activate
+   ```
     ```bash
    pip install -r requirements.txt
    ```
-
-3. Getting Token
+4. Getting Token
 - Open ``The DAWN Extension`` in your browser and login
 - Press F12 or CTRL+SHIFT+I and Select Network
 - Look for ``getpoint?appid=``
 - Insert your account details in ``accounts.json``, with each line in the format for each account, 
 
-4. Fill the Gmail & Token list on accounts.json then save it ctrl + x + y + enter
+5. Fill the Gmail & Token list on accounts.json then save it ctrl + x + y + enter
 ```bash
 nano accounts.json
 ```
-5. If using Proxy list then save it ctrl + x + y + enter
+6. If using Proxy list then save it ctrl + x + y + enter
 ```bash
  nano proxy.txt
 ```
 
-6. Run Command
+7. Run Command
 
 ```bash
 python bot.py #or python3 bot.py
 ```
-7. Stop Command
+8. Stop Command
 
-    ```CTRL + C ```
+   ```CTRL + C ```
